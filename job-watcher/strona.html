@@ -62,13 +62,25 @@ details summary::-webkit-details-marker{display:none}
 .empty b{display:block;color:var(--fg);font-family:var(--display);font-size:18px;margin-bottom:6px}
 .legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:13px;color:var(--muted);margin-top:10px}
 .note-top{font-size:13px;color:var(--unk);margin-top:6px}
+.head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.refresh{flex:none}
+.refresh[disabled]{opacity:.6;cursor:default}
+.scan{margin-top:10px;font-size:14px;padding:10px 12px;border-radius:10px;background:var(--surface2);border:1px solid var(--line)}
+.scan.err{color:var(--bad);background:var(--bad-bg);border-color:transparent}
+.spin{display:inline-block;width:12px;height:12px;border:2px solid var(--line);border-top-color:var(--accent);border-radius:50%;margin-right:8px;vertical-align:-1px}
+@media (prefers-reduced-motion:no-preference){.spin{animation:sp 1s linear infinite}}
+@keyframes sp{to{transform:rotate(360deg)}}
 @media (prefers-reduced-motion:no-preference){.card{transition:opacity .2s}}
 </style>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap">
 
 <div class="wrap">
-  <h1>Radar Ofert Białystok</h1>
+  <div class="head">
+    <h1>Radar Ofert Białystok</h1>
+    <button class="btn primary refresh" id="refresh" type="button" disabled>Odśwież oferty</button>
+  </div>
   <div class="sub" id="status">Ładuję oferty…</div>
+  <div class="scan" id="scan" hidden></div>
   <div class="note-top" id="warn" hidden></div>
   <div class="bar">
     <div class="chips" id="filters" role="toolbar" aria-label="Filtr ofert"></div>
@@ -128,13 +140,63 @@ details summary::-webkit-details-marker{display:none}
     const fn = (FILTERS.find(f => f[0] === filter) || FILTERS[0])[2];
     const rows = offers.filter(fn).sort((a, b) => (b.ocena - a.ocena) || String(b.dodano).localeCompare(String(a.dodano)));
     $('list').innerHTML = rows.length ? rows.map(card).join('') :
-      `<div class="empty"><b>${offers.length ? 'Brak ofert w tym widoku' : 'Jeszcze nic tu nie ma'}</b>${offers.length ? 'Zmień filtr powyżej.' : 'Oferty pojawią się po pierwszym sprawdzeniu OLX i Białystok Online. Zadanie uruchamia się co 2 godziny.'}</div>`;
+      `<div class="empty"><b>${offers.length ? 'Brak ofert w tym widoku' : 'Jeszcze nic tu nie ma'}</b>${offers.length ? 'Zmień filtr powyżej.' : 'Kliknij „Odśwież oferty”, aby sprawdzić OLX i Białystok Online.'}</div>`;
     const hi = offers.filter(FILTERS[0][2]).length;
     $('status').innerHTML = meta && meta.ostatnie
       ? `Ostatnie sprawdzenie: <b>${esc(fmt(meta.ostatnie))}</b> (${esc(ago(meta.ostatnie))}) · ocenionych ofert: <b>${offers.length}</b> · z wysokimi szansami: <b>${hi}</b>`
       : `Ocenionych ofert: <b>${offers.length}</b>`;
     if (meta && meta.bledy) { $('warn').textContent = 'Ostatnie sprawdzenie: ' + meta.bledy; $('warn').hidden = false; } else $('warn').hidden = true;
+    renderScan();
   }
+
+  /* ---------- Odświeżanie: uruchamia skaner (zadanie w chmurze) ---------- */
+  const TRIGGER_ID = 'trig_01RsvyTXgpADnsDDrn5UkRfX';
+  const SERVER = 'Claude Code Remote';
+  const SCAN_MAX_MS = 30 * 60000; // po 30 min uznajemy skan za zakończony/zawieszony
+  let mcp = null, scanMsg = null;
+  const scanning = () => {
+    if (!meta || !meta.skanowanie) return false;
+    const t = new Date(meta.skanowanie).getTime();
+    const last = meta.ostatnie ? new Date(meta.ostatnie).getTime() : 0;
+    return t > last && Date.now() - t < SCAN_MAX_MS;
+  };
+  function renderScan() {
+    const btn = $('refresh'), box = $('scan');
+    const busy = scanning();
+    btn.disabled = !mcp || busy;
+    btn.textContent = busy ? 'Skanuję…' : 'Odśwież oferty';
+    if (busy) {
+      box.className = 'scan'; box.hidden = false;
+      box.innerHTML = `<span class="spin"></span>Skaner pracuje od ${esc(fmt(meta.skanowanie))}. Zwykle trwa 3–10 minut; nowe oferty pojawią się tu same.`;
+    } else if (scanMsg) {
+      box.className = 'scan' + (scanMsg.err ? ' err' : ''); box.hidden = false; box.textContent = scanMsg.text;
+    } else box.hidden = true;
+  }
+  const ERR = {
+    server_not_connected: 'Brak konektora „Claude Code Remote”. Dodaj go w claude.ai: Ustawienia → Konektory.',
+    needs_reauth: 'Połącz ponownie konektor „Claude Code Remote” w claude.ai: Ustawienia → Konektory.',
+    not_in_manifest: 'Ta strona nie ma zgody na uruchamianie skanera. Zezwól w menu uprawnień strony i spróbuj ponownie.',
+    approval_required: 'Uruchomienie skanera wymaga Twojej zgody – kliknij jeszcze raz i zatwierdź okno.',
+    blocked_by_policy: 'Uruchamianie zadań jest zablokowane przez ustawienia organizacji.',
+    server_unavailable: 'Serwer zadań nie odpowiada. Spróbuj za chwilę.',
+  };
+  $('refresh').addEventListener('click', async () => {
+    if (!mcp || scanning()) return;
+    const btn = $('refresh'); btn.disabled = true; btn.textContent = 'Uruchamiam…';
+    scanMsg = null;
+    try {
+      await mcp.callTool(SERVER, 'fire_trigger', {trigger_id: TRIGGER_ID}, {cache: false});
+      const now = new Date().toISOString();
+      meta = Object.assign({}, meta, {skanowanie: now});
+      if (db) { try { await db.doc('meta/stan').update({skanowanie: now}); } catch (e) { try { await db.doc('meta/stan').set({skanowanie: now}); } catch (e2) {} } }
+    } catch (e) {
+      const code = e && e.code;
+      scanMsg = {err: true, text: ERR[code] || ('Nie udało się uruchomić skanera (' + (code || 'błąd') + '). Jeśli to się powtarza, poproś Claude o sprawdzenie zadania.')};
+      if (code === 'server_unavailable' || code === 'upstream_error') scanMsg.text += ' Uwaga: skaner mógł mimo to wystartować – odczekaj kilka minut przed ponownym kliknięciem.';
+    }
+    render();
+  });
+  setInterval(() => { if (meta && meta.skanowanie) renderScan(); }, 30000);
 
   document.addEventListener('click', async e => {
     const f = e.target.closest('[data-f]');
@@ -150,6 +212,11 @@ details summary::-webkit-details-marker{display:none}
 
   render();
   const timer = setTimeout(() => { if (!offers.length) $('status').textContent = 'Nie udało się jeszcze połączyć z bazą ofert. Odśwież stronę za chwilę.'; }, 10000);
+  (async () => {
+    mcp = await window.claude?.use?.('mcp');
+    if (!mcp) { scanMsg = {err: false, text: 'Przycisk odświeżania działa tylko po otwarciu strony na claude.ai (zalogowany).'}; }
+    renderScan();
+  })();
   (async () => {
     db = await window.claude?.use?.('db');
     if (!db) { clearTimeout(timer); $('status').textContent = 'Baza ofert jest niedostępna w tym widoku. Otwórz stronę zalogowany na claude.ai.'; return; }
