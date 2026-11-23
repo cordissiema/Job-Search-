@@ -1,0 +1,752 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Nihongo">
+<meta name="theme-color" content="#111318">
+<meta name="color-scheme" content="dark">
+<title>Nihongo – nauka japońskiego</title>
+<style>
+:root{
+  --bg:#111318; --bg2:#1a1d24; --card:#22262f; --card2:#2b303b; --line:#343a47;
+  --text:#eef0f4; --muted:#9aa2b1; --accent:#ff6b6b; --accent2:#ffa94d;
+  --ok:#3ecf8e; --bad:#ff5c6c; --info:#5aa9ff; --warn:#f5c04a;
+  --r:18px; --jp:"Hiragino Sans","Hiragino Kaku Gothic ProN","Noto Sans JP","Yu Gothic",sans-serif;
+  --safe-b:env(safe-area-inset-bottom,0px); --safe-t:env(safe-area-inset-top,0px);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--text);font:17px/1.45 -apple-system,BlinkMacSystemFont,"SF Pro Text",system-ui,sans-serif;-webkit-text-size-adjust:100%}
+body{min-height:100vh;min-height:100dvh;overscroll-behavior-y:none}
+button{font:inherit;color:inherit;border:0;background:none;cursor:pointer;touch-action:manipulation;-webkit-user-select:none;user-select:none}
+.jp{font-family:var(--jp)}
+header{position:sticky;top:0;z-index:5;background:rgba(17,19,24,.92);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);
+  padding:calc(var(--safe-t) + 10px) 16px 10px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px;min-height:56px}
+header h1{font-size:20px;margin:0;flex:1;font-weight:700}
+header .streak{font-size:15px;color:var(--accent2);font-weight:600;white-space:nowrap}
+main{padding:16px 16px calc(96px + var(--safe-b));max-width:720px;margin:0 auto}
+nav{position:fixed;left:0;right:0;bottom:0;z-index:5;display:flex;background:rgba(26,29,36,.96);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);
+  border-top:1px solid var(--line);padding:6px 4px calc(6px + var(--safe-b))}
+nav button{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 0;min-height:56px;font-size:11px;color:var(--muted);border-radius:12px}
+nav button .ic{font-size:23px;line-height:1.1;font-family:var(--jp)}
+nav button.on{color:var(--accent)}
+nav button .badge{position:absolute;margin-left:26px;margin-top:-2px;background:var(--accent);color:#fff;font-size:10px;border-radius:9px;padding:0 5px;min-width:16px;line-height:16px}
+h2{font-size:18px;margin:22px 0 10px}
+h2:first-child{margin-top:4px}
+.muted{color:var(--muted)}
+.small{font-size:14px}
+/* Segmenty i chipy */
+.seg{display:flex;background:var(--bg2);border:1px solid var(--line);border-radius:14px;padding:4px;gap:4px;margin-bottom:12px}
+.seg button{flex:1;padding:11px 6px;border-radius:10px;font-weight:600;font-size:15px;color:var(--muted);min-height:44px}
+.seg button.on{background:var(--card2);color:var(--text)}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
+.chip{padding:10px 14px;border-radius:999px;background:var(--bg2);border:1px solid var(--line);font-size:15px;min-height:44px;color:var(--muted)}
+.chip.on{background:rgba(255,107,107,.15);border-color:var(--accent);color:var(--text)}
+/* Przyciski */
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;min-height:56px;padding:14px 18px;border-radius:16px;
+  background:var(--card2);font-weight:700;font-size:18px;transition:transform .08s}
+.btn:active{transform:scale(.97);filter:brightness(1.15)}
+.btn.primary{background:var(--accent);color:#fff}
+.btn.ok{background:var(--ok);color:#06281a}
+.btn.bad{background:var(--bad);color:#fff}
+.btn.ghost{background:transparent;border:1px solid var(--line);color:var(--muted);font-weight:600;font-size:16px;min-height:48px}
+.row{display:flex;gap:12px}
+.row>*{flex:1}
+.stack>*+*{margin-top:12px}
+/* Karty listy */
+.list{display:flex;flex-direction:column;gap:10px}
+.item{background:var(--card);border-radius:var(--r);padding:14px 14px 14px 16px;display:flex;align-items:center;gap:12px;border:1px solid transparent}
+.item .main{flex:1;min-width:0}
+.item .jpw{font-family:var(--jp);font-size:24px;line-height:1.25;word-break:break-word}
+.item .rd{font-size:14px;color:var(--muted)}
+.item .pl{font-size:16px;margin-top:2px}
+.spk{width:52px;height:52px;flex:none;border-radius:50%;background:var(--card2);display:flex;align-items:center;justify-content:center;font-size:22px}
+.spk:active{background:var(--info)}
+.dot{width:10px;height:10px;border-radius:50%;flex:none;background:var(--line)}
+.lv1{background:var(--bad)} .lv2{background:var(--warn)} .lv3{background:var(--ok)}
+/* Tabela kana */
+.grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+.cell{background:var(--card);border-radius:14px;padding:10px 0 8px;text-align:center;min-height:72px;border-bottom:3px solid transparent}
+.cell:active{background:var(--card2)}
+.cell .c{font-family:var(--jp);font-size:28px;line-height:1.2}
+.cell .r{font-size:13px;color:var(--muted)}
+.cell.lv1{border-bottom-color:var(--bad);background:var(--card)} .cell.lv2{border-bottom-color:var(--warn);background:var(--card)} .cell.lv3{border-bottom-color:var(--ok);background:var(--card)}
+.cell.empty{visibility:hidden}
+.grid.y{grid-template-columns:repeat(3,1fr)}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:13px;color:var(--muted);margin:12px 0}
+.legend span{display:flex;align-items:center;gap:6px}
+/* Fiszka */
+.top-sess{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;gap:10px}
+.top-sess .x{padding:10px 14px;border-radius:12px;background:var(--bg2);color:var(--muted);font-size:15px;min-height:44px}
+.bar{height:6px;background:var(--bg2);border-radius:6px;overflow:hidden;margin-bottom:14px}
+.bar i{display:block;height:100%;background:var(--accent);border-radius:6px;transition:width .25s}
+.flash{position:relative;background:linear-gradient(160deg,var(--card2),var(--card));border-radius:24px;min-height:46vh;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:28px 18px;text-align:center;border:1px solid var(--line);margin-bottom:16px;cursor:pointer;-webkit-user-select:none;user-select:none}
+.flash:active{filter:brightness(1.08)}
+.flash .big{font-family:var(--jp);font-size:min(30vw,130px);line-height:1.1}
+.flash .big.w{font-size:min(14vw,64px)}
+.flash .big.s{font-size:min(8vw,34px);line-height:1.4}
+.flash .big.pl{font-family:inherit;font-size:min(9vw,38px)}
+.flash .ans{margin-top:18px;animation:fade .2s}
+.flash .ans .ro{font-size:30px;font-weight:700;color:var(--accent2)}
+.flash .ans .kn{font-family:var(--jp);font-size:22px;color:var(--muted)}
+.flash .ans .me{font-size:22px;margin-top:6px}
+.flash .hint{position:absolute;bottom:14px;left:0;right:0;font-size:14px;color:var(--muted)}
+.flash .spk{position:absolute;top:12px;right:12px}
+.flash .tag{position:absolute;top:18px;left:16px;font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+@keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+/* Quiz */
+.opts{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.opts.wide{grid-template-columns:1fr}
+.opt{background:var(--card);border:2px solid var(--line);border-radius:18px;min-height:76px;padding:12px;font-size:21px;font-weight:600;word-break:break-word}
+.opt.jpo{font-family:var(--jp);font-size:24px;font-weight:400}
+.opt:active{background:var(--card2)}
+.opt.good{background:rgba(62,207,142,.2);border-color:var(--ok)}
+.opt.wrong{background:rgba(255,92,108,.2);border-color:var(--bad)}
+.qcard{min-height:30vh}
+/* Statystyki */
+.tiles{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.tile{background:var(--card);border-radius:var(--r);padding:16px}
+.tile .n{font-size:32px;font-weight:800;line-height:1.1}
+.tile .l{font-size:14px;color:var(--muted)}
+.tile.hero{grid-column:1/-1;display:flex;align-items:center;gap:16px;background:linear-gradient(135deg,rgba(255,107,107,.22),rgba(255,169,77,.14))}
+.tile.hero .fire{font-size:44px}
+.prog{height:10px;background:var(--bg2);border-radius:6px;overflow:hidden;margin-top:10px}
+.prog i{display:block;height:100%;background:var(--ok)}
+.prog i.l{background:var(--warn);float:left}
+.prog i.m{float:left}
+.chart{display:flex;align-items:flex-end;gap:4px;height:110px;background:var(--card);border-radius:var(--r);padding:14px 12px 26px;position:relative}
+.chart div{flex:1;background:var(--accent);border-radius:4px 4px 0 0;min-height:2px;position:relative;opacity:.9}
+.chart div.z{background:var(--line)}
+.chart div span{position:absolute;bottom:-20px;left:50%;transform:translateX(-50%);font-size:10px;color:var(--muted)}
+.set{background:var(--card);border-radius:var(--r);padding:16px}
+.set label{display:block;font-weight:600;margin-bottom:8px}
+input[type=range]{width:100%;height:40px;accent-color:var(--accent)}
+.toast{position:fixed;left:50%;bottom:calc(90px + var(--safe-b));transform:translateX(-50%);background:var(--card2);color:var(--text);padding:12px 18px;border-radius:14px;
+  font-size:15px;box-shadow:0 8px 30px rgba(0,0,0,.5);z-index:20;max-width:90vw;text-align:center;animation:fade .2s}
+.empty-st{text-align:center;padding:30px 10px}
+.empty-st .e{font-size:54px}
+.deck{display:flex;align-items:center;justify-content:space-between;background:var(--card);border-radius:var(--r);padding:16px;min-height:72px;width:100%;text-align:left;border:2px solid transparent}
+.deck.on{border-color:var(--accent)}
+.deck b{font-size:17px}
+.deck .cnt{text-align:right;font-size:14px;color:var(--muted)}
+.deck .cnt strong{color:var(--accent2);font-size:20px}
+.res{text-align:center;padding:24px 8px}
+.res .e{font-size:64px}
+.res .big{font-size:40px;font-weight:800;margin:6px 0}
+.phrase .jpw{font-size:21px}
+.phrase .ro{font-size:14px;color:var(--accent2);margin-top:2px}
+</style>
+</head>
+<body>
+<header><h1 id="title">Nihongo</h1><div class="streak" id="streak"></div></header>
+<main id="view"></main>
+<nav id="nav">
+  <button data-tab="kana"><span class="ic">あ</span>Kana</button>
+  <button data-tab="words"><span class="ic">語</span>Słowa</button>
+  <button data-tab="phrases"><span class="ic">💬</span>Zwroty</button>
+  <button data-tab="review"><span class="ic">🔁</span><span id="dueBadge"></span>Powtórki</button>
+  <button data-tab="stats"><span class="ic">📊</span>Statystyki</button>
+</nav>
+
+<script>
+'use strict';
+/* ================== DANE ================== */
+const KANA_SRC = {
+  basic:'あ a,い i,う u,え e,お o,か ka,き ki,く ku,け ke,こ ko,さ sa,し shi,す su,せ se,そ so,た ta,ち chi,つ tsu,て te,と to,な na,に ni,ぬ nu,ね ne,の no,は ha,ひ hi,ふ fu,へ he,ほ ho,ま ma,み mi,む mu,め me,も mo,や ya,_,ゆ yu,_,よ yo,ら ra,り ri,る ru,れ re,ろ ro,わ wa,_,_,_,を wo,ん n,_,_,_,_',
+  daku:'が ga,ぎ gi,ぐ gu,げ ge,ご go,ざ za,じ ji,ず zu,ぜ ze,ぞ zo,だ da,ぢ ji,づ zu,で de,ど do,ば ba,び bi,ぶ bu,べ be,ぼ bo,ぱ pa,ぴ pi,ぷ pu,ぺ pe,ぽ po',
+  yoon:'きゃ kya,きゅ kyu,きょ kyo,しゃ sha,しゅ shu,しょ sho,ちゃ cha,ちゅ chu,ちょ cho,にゃ nya,にゅ nyu,にょ nyo,ひゃ hya,ひゅ hyu,ひょ hyo,みゃ mya,みゅ myu,みょ myo,りゃ rya,りゅ ryu,りょ ryo,ぎゃ gya,ぎゅ gyu,ぎょ gyo,じゃ ja,じゅ ju,じょ jo,びゃ bya,びゅ byu,びょ byo,ぴゃ pya,ぴゅ pyu,ぴょ pyo'
+};
+const KANA_GROUPS = {basic:'Podstawowe', daku:'Dakuten ゛゜', yoon:'Yōon (きゃ…)'};
+const toKata = s => s.replace(/[ぁ-ゖ]/g, c => String.fromCharCode(c.charCodeAt(0) + 0x60));
+const KANA = {h:[], k:[]};
+const KANA_LAYOUT = {h:{}, k:{}};
+for (const g of Object.keys(KANA_SRC)) {
+  for (const sc of ['h','k']) KANA_LAYOUT[sc][g] = [];
+  for (const part of KANA_SRC[g].split(',')) {
+    if (part === '_') { KANA_LAYOUT.h[g].push(null); KANA_LAYOUT.k[g].push(null); continue; }
+    const [ch, ro] = part.split(' ');
+    for (const sc of ['h','k']) {
+      const c = sc === 'h' ? ch : toKata(ch);
+      const it = {id: sc + ':' + c, type: sc, group: g, front: c, romaji: ro, speak: c};
+      KANA[sc].push(it); KANA_LAYOUT[sc][g].push(it);
+    }
+  }
+}
+
+const WORDS_SRC = `#Powitania
+こんにちは||konnichiwa|dzień dobry / cześć
+おはようございます||ohayō gozaimasu|dzień dobry (rano)
+こんばんは||konbanwa|dobry wieczór
+さようなら||sayōnara|do widzenia
+おやすみなさい||oyasuminasai|dobranoc
+ありがとう||arigatō|dziękuję
+すみません||sumimasen|przepraszam (zaczepiając)
+ごめんなさい||gomennasai|przepraszam (przeprosiny)
+はい||hai|tak
+いいえ||iie|nie
+お願いします|おねがいします|onegaishimasu|proszę (prośba)
+どうぞ||dōzo|proszę (podając coś)
+いただきます||itadakimasu|smacznego (przed jedzeniem)
+ごちそうさま||gochisōsama|dziękuję za posiłek
+初めまして|はじめまして|hajimemashite|miło mi poznać
+よろしく||yoroshiku|proszę o życzliwość
+またね||mata ne|do zobaczenia
+元気|げんき|genki|zdrowy, w formie
+大丈夫|だいじょうぶ|daijōbu|w porządku
+いらっしゃいませ||irasshaimase|witamy (w sklepie)
+もしもし||moshi moshi|halo (przez telefon)
+#Liczby
+一|いち|ichi|jeden
+二|に|ni|dwa
+三|さん|san|trzy
+四|よん|yon|cztery
+五|ご|go|pięć
+六|ろく|roku|sześć
+七|なな|nana|siedem
+八|はち|hachi|osiem
+九|きゅう|kyū|dziewięć
+十|じゅう|jū|dziesięć
+二十|にじゅう|nijū|dwadzieścia
+百|ひゃく|hyaku|sto
+千|せん|sen|tysiąc
+万|まん|man|dziesięć tysięcy
+ゼロ||zero|zero
+一つ|ひとつ|hitotsu|jedna (sztuka)
+二つ|ふたつ|futatsu|dwie (sztuki)
+三つ|みっつ|mittsu|trzy (sztuki)
+半分|はんぶん|hanbun|połowa
+円|えん|en|jen
+何|なに|nani|co
+いくら||ikura|ile (kosztuje)
+#Jedzenie
+水|みず|mizu|woda
+お茶|おちゃ|ocha|herbata
+ご飯|ごはん|gohan|ryż / posiłek
+パン||pan|chleb
+肉|にく|niku|mięso
+魚|さかな|sakana|ryba
+野菜|やさい|yasai|warzywa
+果物|くだもの|kudamono|owoce
+卵|たまご|tamago|jajko
+牛乳|ぎゅうにゅう|gyūnyū|mleko
+コーヒー||kōhī|kawa
+ビール||bīru|piwo
+お酒|おさけ|osake|alkohol / sake
+寿司|すし|sushi|sushi
+ラーメン||rāmen|ramen
+りんご||ringo|jabłko
+鶏肉|とりにく|toriniku|kurczak
+塩|しお|shio|sól
+砂糖|さとう|satō|cukier
+朝ご飯|あさごはん|asagohan|śniadanie
+昼ご飯|ひるごはん|hirugohan|obiad (lunch)
+晩ご飯|ばんごはん|bangohan|kolacja
+美味しい|おいしい|oishii|smaczny
+食べる|たべる|taberu|jeść
+飲む|のむ|nomu|pić
+#Kolory
+赤|あか|aka|czerwony
+青|あお|ao|niebieski
+黄色|きいろ|kiiro|żółty
+緑|みどり|midori|zielony
+白|しろ|shiro|biały
+黒|くろ|kuro|czarny
+茶色|ちゃいろ|chairo|brązowy
+紫|むらさき|murasaki|fioletowy
+ピンク||pinku|różowy
+オレンジ||orenji|pomarańczowy
+灰色|はいいろ|haiiro|szary
+金色|きんいろ|kin'iro|złoty
+銀色|ぎんいろ|gin'iro|srebrny
+色|いろ|iro|kolor
+#Czas
+今日|きょう|kyō|dzisiaj
+明日|あした|ashita|jutro
+昨日|きのう|kinō|wczoraj
+今|いま|ima|teraz
+朝|あさ|asa|rano
+昼|ひる|hiru|południe
+夜|よる|yoru|noc
+時間|じかん|jikan|czas, godzina (okres)
+分|ふん|fun|minuta
+週|しゅう|shū|tydzień
+月|つき|tsuki|miesiąc / księżyc
+年|とし|toshi|rok
+毎日|まいにち|mainichi|codziennie
+月曜日|げつようび|getsuyōbi|poniedziałek
+火曜日|かようび|kayōbi|wtorek
+水曜日|すいようび|suiyōbi|środa
+木曜日|もくようび|mokuyōbi|czwartek
+金曜日|きんようび|kin'yōbi|piątek
+土曜日|どようび|doyōbi|sobota
+日曜日|にちようび|nichiyōbi|niedziela
+春|はる|haru|wiosna
+夏|なつ|natsu|lato
+秋|あき|aki|jesień
+冬|ふゆ|fuyu|zima
+いつ||itsu|kiedy
+#Rodzina
+家族|かぞく|kazoku|rodzina
+父|ちち|chichi|(mój) ojciec
+母|はは|haha|(moja) matka
+お父さん|おとうさん|otōsan|tata
+お母さん|おかあさん|okāsan|mama
+兄|あに|ani|(mój) starszy brat
+姉|あね|ane|(moja) starsza siostra
+弟|おとうと|otōto|młodszy brat
+妹|いもうと|imōto|młodsza siostra
+子供|こども|kodomo|dziecko
+息子|むすこ|musuko|syn
+娘|むすめ|musume|córka
+夫|おっと|otto|mąż
+妻|つま|tsuma|żona
+祖父|そふ|sofu|dziadek
+祖母|そぼ|sobo|babcia
+友達|ともだち|tomodachi|przyjaciel
+私|わたし|watashi|ja
+人|ひと|hito|człowiek, osoba
+#Podróże
+駅|えき|eki|stacja
+電車|でんしゃ|densha|pociąg
+空港|くうこう|kūkō|lotnisko
+飛行機|ひこうき|hikōki|samolot
+切符|きっぷ|kippu|bilet
+ホテル||hoteru|hotel
+地図|ちず|chizu|mapa
+道|みち|michi|droga, ulica
+右|みぎ|migi|prawo (strona)
+左|ひだり|hidari|lewo (strona)
+まっすぐ||massugu|prosto
+トイレ||toire|toaleta
+お店|おみせ|omise|sklep
+レストラン||resutoran|restauracja
+タクシー||takushī|taksówka
+バス||basu|autobus
+パスポート||pasupōto|paszport
+荷物|にもつ|nimotsu|bagaż
+お金|おかね|okane|pieniądze
+入口|いりぐち|iriguchi|wejście
+出口|でぐち|deguchi|wyjście
+病院|びょういん|byōin|szpital
+警察|けいさつ|keisatsu|policja
+どこ||doko|gdzie`;
+
+const WORDS = [], CATS = [];
+{
+  let cat = '';
+  WORDS_SRC.trim().split('\n').forEach(line => {
+    line = line.trim(); if (!line) return;
+    if (line[0] === '#') { cat = line.slice(1); CATS.push(cat); return; }
+    const [jp, kana, ro, pl] = line.split('|');
+    WORDS.push({id: 'w:' + jp, type: 'w', cat, front: jp, kana: kana || '', romaji: ro, meaning: pl, speak: kana || jp});
+  });
+}
+
+const PHRASES_SRC = `すみません、英語を話せますか？|Sumimasen, eigo o hanasemasu ka?|Przepraszam, czy mówi Pan/Pani po angielsku?
+日本語が分かりません。|Nihongo ga wakarimasen.|Nie rozumiem po japońsku.
+もう一度お願いします。|Mō ichido onegaishimasu.|Proszę powtórzyć.
+ゆっくり話してください。|Yukkuri hanashite kudasai.|Proszę mówić wolniej.
+トイレはどこですか？|Toire wa doko desu ka?|Gdzie jest toaleta?
+駅はどこですか？|Eki wa doko desu ka?|Gdzie jest stacja?
+これはいくらですか？|Kore wa ikura desu ka?|Ile to kosztuje?
+これをください。|Kore o kudasai.|Poproszę to.
+メニューをお願いします。|Menyū o onegaishimasu.|Poproszę menu.
+お会計をお願いします。|Okaikei o onegaishimasu.|Poproszę rachunek.
+カードで払えますか？|Kādo de haraemasu ka?|Czy mogę zapłacić kartą?
+水をください。|Mizu o kudasai.|Poproszę wodę.
+おすすめは何ですか？|Osusume wa nan desu ka?|Co Pan/Pani poleca?
+肉は食べられません。|Niku wa taberaremasen.|Nie mogę jeść mięsa.
+二人です。|Futari desu.|Dwie osoby (stolik dla dwojga).
+とても美味しいです。|Totemo oishii desu.|Bardzo smaczne.
+予約しています。|Yoyaku shite imasu.|Mam rezerwację.
+チェックインをお願いします。|Chekkuin o onegaishimasu.|Chciałbym/Chciałabym się zameldować.
+Wi-Fiはありますか？|Waifai wa arimasu ka?|Czy jest tu Wi-Fi?
+この電車は東京に行きますか？|Kono densha wa Tōkyō ni ikimasu ka?|Czy ten pociąg jedzie do Tokio?
+東京まで一枚ください。|Tōkyō made ichimai kudasai.|Poproszę jeden bilet do Tokio.
+ここに行きたいです。|Koko ni ikitai desu.|Chcę się tu dostać (pokazując mapę).
+写真を撮ってもいいですか？|Shashin o totte mo ii desu ka?|Czy mogę zrobić zdjęcie?
+道に迷いました。|Michi ni mayoimashita.|Zgubiłem/Zgubiłam się.
+助けてください！|Tasukete kudasai!|Pomocy!
+病院はどこですか？|Byōin wa doko desu ka?|Gdzie jest szpital?
+警察を呼んでください。|Keisatsu o yonde kudasai.|Proszę wezwać policję.
+ポーランドから来ました。|Pōrando kara kimashita.|Jestem z Polski.
+私の名前は…です。|Watashi no namae wa … desu.|Mam na imię…
+ありがとうございました。|Arigatō gozaimashita.|Bardzo dziękuję (za to, co było).`;
+const PHRASES = PHRASES_SRC.trim().split('\n').map((l, i) => {
+  const [jp, ro, pl] = l.split('|');
+  return {id: 'p:' + i, type: 'p', front: jp, romaji: ro, meaning: pl, speak: jp.replace('…', '、なになに、')};
+});
+const ALL = [...KANA.h, ...KANA.k, ...WORDS, ...PHRASES];
+const BY_ID = Object.fromEntries(ALL.map(i => [i.id, i]));
+
+/* ================== STAN / localStorage ================== */
+const KEY = 'nihongo_pl_v1';
+const DAY = 864e5;
+const INTERVALS = [0, 1, 3, 7, 14, 30, 60, 120]; // dni dla pudełka 0..7
+const MASTER = 3;
+function defaults() { return {srs:{}, log:{}, settings:{rate:0.85, newPerDay:15}, newDay:{d:'', n:0}, total:0, correct:0, best:0}; }
+let st = defaults();
+try { const raw = localStorage.getItem(KEY); if (raw) st = Object.assign(defaults(), JSON.parse(raw)); } catch (e) {}
+st.settings = Object.assign(defaults().settings, st.settings || {});
+let saveOk = true;
+function save() {
+  try { localStorage.setItem(KEY, JSON.stringify(st)); saveOk = true; }
+  catch (e) { if (saveOk) toast('Nie udało się zapisać postępu (tryb prywatny?)'); saveOk = false; }
+}
+const dkey = (t = new Date()) => { const d = new Date(t); return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'); };
+function streak() {
+  let n = 0; const d = new Date(); d.setHours(12,0,0,0);
+  if (!st.log[dkey(d)]) d.setDate(d.getDate() - 1);
+  while (st.log[dkey(d)]) { n++; d.setDate(d.getDate() - 1); }
+  return n;
+}
+function level(id) { const s = st.srs[id]; if (!s) return 0; if (s.b >= MASTER) return 3; if (s.b === 0) return 1; return 2; }
+function isDue(id, now = Date.now()) { const s = st.srs[id]; return !!s && s.d <= now; }
+function newToday() { return st.newDay.d === dkey() ? st.newDay.n : 0; }
+
+function grade(id, ok) {
+  const now = Date.now();
+  let s = st.srs[id];
+  if (!s) {
+    s = {b:0, d:0, r:0, w:0};
+    if (st.newDay.d !== dkey()) st.newDay = {d: dkey(), n: 0};
+    st.newDay.n++;
+  }
+  if (ok) {
+    // awans tylko gdy karta była do powtórki (nowa / zapomniana / termin minął)
+    if (s.b === 0 || s.d <= now) s.b = Math.min(s.b + 1, INTERVALS.length - 1);
+    s.d = Math.max(s.d, now + INTERVALS[s.b] * DAY - 3600e3); // -1h zapasu, żeby można było powtarzać o tej samej porze
+    s.r++; st.correct++;
+  } else {
+    s.b = 0; s.d = now; s.w++; // wraca od razu – i częściej, bo pudełko 0
+  }
+  st.srs[id] = s;
+  const k = dkey(); st.log[k] = (st.log[k] || 0) + 1;
+  st.total++;
+  st.best = Math.max(st.best || 0, streak());
+  save(); updateHeader();
+}
+
+/* ================== MOWA (Web Speech API) ================== */
+let jaVoice = null;
+const hasTTS = 'speechSynthesis' in window && 'SpeechSynthesisUtterance' in window;
+function loadVoices() {
+  if (!hasTTS) return;
+  const vs = speechSynthesis.getVoices() || [];
+  const ja = vs.filter(v => /^ja([-_]|$)/i.test(v.lang));
+  jaVoice = ja.find(v => /kyoko|o-ren|otoya|hattori/i.test(v.name) && v.localService) || ja.find(v => v.localService) || ja[0] || null;
+}
+if (hasTTS) { loadVoices(); speechSynthesis.onvoiceschanged = loadVoices; }
+function speak(text) {
+  if (!hasTTS) { toast('Ta przeglądarka nie obsługuje syntezy mowy'); return; }
+  if (!jaVoice) loadVoices();
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = 'ja-JP'; if (jaVoice) u.voice = jaVoice;
+  u.rate = st.settings.rate; u.pitch = 1;
+  if (speechSynthesis.speaking || speechSynthesis.pending) { speechSynthesis.cancel(); setTimeout(() => speechSynthesis.speak(u), 80); }
+  else speechSynthesis.speak(u);
+}
+
+/* ================== POMOCNICZE ================== */
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const shuffle = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.random() * (i + 1) | 0; [a[i], a[j]] = [a[j], a[i]]; } return a; };
+let toastT;
+function toast(msg) { document.querySelectorAll('.toast').forEach(e => e.remove()); const t = document.createElement('div'); t.className = 'toast'; t.textContent = msg; document.body.appendChild(t); clearTimeout(toastT); toastT = setTimeout(() => t.remove(), 2400); }
+const spkBtn = id => `<button class="spk" data-act="speak" data-id="${esc(id)}" aria-label="Odtwórz wymowę">🔊</button>`;
+
+/* ================== UI STAN ================== */
+const ui = {tab: 'kana', kScript: 'h', kGroups: ['basic'], kMode: 'table', wCat: 'Wszystkie', wMode: 'list', wRev: false, pMode: 'list', deck: 'all'};
+try { Object.assign(ui, JSON.parse(localStorage.getItem(KEY + '_ui') || '{}')); } catch (e) {}
+const saveUi = () => { try { localStorage.setItem(KEY + '_ui', JSON.stringify(ui)); } catch (e) {} };
+let sess = null; // aktywna sesja fiszek/quizu
+
+const TITLES = {kana: 'Hiragana i katakana', words: 'Słownictwo', phrases: 'Zwroty w podróży', review: 'Powtórki', stats: 'Statystyki'};
+function updateHeader() {
+  const s = streak();
+  $('#streak').textContent = s ? '🔥 ' + s + (s === 1 ? ' dzień' : ' dni') : '';
+  const due = ALL.filter(i => isDue(i.id)).length;
+  $('#dueBadge').innerHTML = due ? `<span class="badge">${due > 99 ? '99+' : due}</span>` : '';
+}
+function setTab(t) { ui.tab = t; sess = null; saveUi(); render(); window.scrollTo(0, 0); }
+
+/* ================== RENDER ================== */
+function render() {
+  document.querySelectorAll('#nav button').forEach(b => b.classList.toggle('on', b.dataset.tab === ui.tab));
+  $('#title').textContent = TITLES[ui.tab];
+  updateHeader();
+  const v = $('#view');
+  if (sess) { v.innerHTML = sess.type === 'quiz' ? renderQuiz() : renderCards(); return; }
+  v.innerHTML = ({kana: renderKana, words: renderWords, phrases: renderPhrases, review: renderReview, stats: renderStats})[ui.tab]();
+}
+
+const seg = (key, opts) => `<div class="seg">${opts.map(([val, lab]) => `<button class="${ui[key] === val ? 'on' : ''}" data-act="ui" data-k="${key}" data-v="${val}">${lab}</button>`).join('')}</div>`;
+
+function kanaPool() { return KANA[ui.kScript].filter(i => ui.kGroups.includes(i.group)); }
+function renderKana() {
+  let h = seg('kScript', [['h', 'Hiragana ひ'], ['k', 'Katakana カ']]);
+  h += `<div class="chips">${Object.entries(KANA_GROUPS).map(([g, l]) => `<button class="chip ${ui.kGroups.includes(g) ? 'on' : ''}" data-act="kgroup" data-v="${g}">${l}</button>`).join('')}</div>`;
+  h += seg('kMode', [['table', 'Tabela'], ['cards', 'Fiszki'], ['quiz', 'Quiz']]);
+  const pool = kanaPool();
+  if (ui.kMode === 'table') {
+    h += `<p class="muted small">Dotknij znaku, aby usłyszeć wymowę.</p>`;
+    for (const g of ui.kGroups) {
+      if (ui.kGroups.length > 1) h += `<h2>${KANA_GROUPS[g]}</h2>`;
+      h += `<div class="grid ${g === 'yoon' ? 'y' : ''}">` + KANA_LAYOUT[ui.kScript][g].map(it => it
+        ? `<button class="cell lv${level(it.id)}" data-act="speak" data-id="${it.id}"><div class="c">${it.front}</div><div class="r">${it.romaji}</div></button>`
+        : `<div class="cell empty"></div>`).join('') + `</div>`;
+    }
+    h += legend();
+  } else {
+    const m = pool.filter(i => level(i.id) === 3).length;
+    h += `<div class="set stack"><div><b>${pool.length}</b> znaków w zestawie · opanowane: <b>${m}</b></div>`;
+    h += ui.kMode === 'cards'
+      ? `<p class="muted small" style="margin:0">Zobacz znak, dotknij karty, by sprawdzić odczyt. Oceń się przyciskami „Znam” / „Nie znam” – trudne znaki wrócą szybciej.</p><button class="btn primary" data-act="startKana">Zacznij fiszki</button>`
+      : `<p class="muted small" style="margin:0">20 pytań, 4 odpowiedzi do wyboru. Błędy trafiają do powtórek.</p><button class="btn primary" data-act="startKana">Zacznij quiz</button>`;
+    h += `</div>`;
+  }
+  return h;
+}
+const legend = () => `<div class="legend"><span><i class="dot"></i>nowe</span><span><i class="dot lv1"></i>do powtórki</span><span><i class="dot lv2"></i>w nauce</span><span><i class="dot lv3"></i>opanowane</span></div>`;
+
+function wordPool() { return ui.wCat === 'Wszystkie' ? WORDS : WORDS.filter(w => w.cat === ui.wCat); }
+function renderWords() {
+  let h = `<div class="chips">${['Wszystkie', ...CATS].map(c => `<button class="chip ${ui.wCat === c ? 'on' : ''}" data-act="ui" data-k="wCat" data-v="${c}">${c}</button>`).join('')}</div>`;
+  h += seg('wMode', [['list', 'Lista'], ['cards', 'Fiszki'], ['quiz', 'Quiz']]);
+  const pool = wordPool();
+  if (ui.wMode === 'list') {
+    h += `<div class="list">` + pool.map(w => `<div class="item"><i class="dot lv${level(w.id)}"></i><div class="main"><div class="jpw">${esc(w.front)}</div><div class="rd"><span class="jp">${esc(w.kana)}</span>${w.kana ? ' · ' : ''}${esc(w.romaji)}</div><div class="pl">${esc(w.meaning)}</div></div>${spkBtn(w.id)}</div>`).join('') + `</div>` + legend();
+  } else {
+    h += seg('wRev', [[false, 'JP → PL'], [true, 'PL → JP']]);
+    const m = pool.filter(i => level(i.id) === 3).length;
+    h += `<div class="set stack"><div><b>${pool.length}</b> słów · opanowane: <b>${m}</b></div><button class="btn primary" data-act="startWords">${ui.wMode === 'cards' ? 'Zacznij fiszki' : 'Zacznij quiz'}</button></div>`;
+  }
+  return h;
+}
+
+function renderPhrases() {
+  let h = seg('pMode', [['list', 'Lista'], ['cards', 'Fiszki']]);
+  if (ui.pMode === 'list') {
+    h += `<div class="list">` + PHRASES.map(p => `<div class="item phrase"><i class="dot lv${level(p.id)}"></i><div class="main"><div class="jpw">${esc(p.front)}</div><div class="ro">${esc(p.romaji)}</div><div class="pl">${esc(p.meaning)}</div></div>${spkBtn(p.id)}</div>`).join('') + `</div>`;
+  } else {
+    h += `<div class="set stack"><div><b>${PHRASES.length}</b> zwrotów · opanowane: <b>${PHRASES.filter(i => level(i.id) === 3).length}</b></div><p class="muted small" style="margin:0">Widzisz polskie zdanie – spróbuj powiedzieć je po japońsku, potem odkryj kartę i odsłuchaj.</p><button class="btn primary" data-act="startPhrases">Zacznij fiszki</button></div>`;
+  }
+  return h;
+}
+
+const DECKS = [
+  ['all', 'Wszystko', () => ALL],
+  ['h', 'Hiragana', () => KANA.h],
+  ['k', 'Katakana', () => KANA.k],
+  ['w', 'Słownictwo', () => WORDS],
+  ['p', 'Zwroty', () => PHRASES]
+];
+function reviewQueue(pool) {
+  const now = Date.now();
+  const due = pool.filter(i => isDue(i.id, now)).sort((a, b) => {
+    const A = st.srs[a.id], B = st.srs[b.id];
+    return (A.b - B.b) || (B.w - A.w) || (A.d - B.d); // najpierw najsłabsze i najczęściej mylone
+  }).slice(0, 60);
+  const left = Math.max(0, st.settings.newPerDay - newToday());
+  const fresh = pool.filter(i => !st.srs[i.id]).slice(0, left);
+  return {due, fresh};
+}
+function renderReview() {
+  let h = `<p class="muted small" style="margin-top:0">System powtórek w odstępach: „Znam” wydłuża przerwę (1 → 3 → 7 → 14 → 30 dni…), „Nie znam” cofa kartę na początek – wróci jeszcze w tej sesji i w następnych.</p><div class="list">`;
+  for (const [k, lab, fn] of DECKS) {
+    const q = reviewQueue(fn());
+    h += `<button class="deck ${ui.deck === k ? 'on' : ''}" data-act="ui" data-k="deck" data-v="${k}"><b>${lab}</b><span class="cnt"><strong>${q.due.length}</strong> do powtórki<br>+ ${q.fresh.length} nowych</span></button>`;
+  }
+  h += `</div><div style="margin-top:16px">`;
+  const q = reviewQueue(DECKS.find(d => d[0] === ui.deck)[2]());
+  h += (q.due.length + q.fresh.length)
+    ? `<button class="btn primary" data-act="startReview">Rozpocznij powtórkę (${q.due.length + q.fresh.length})</button>`
+    : `<div class="empty-st"><div class="e">🎉</div><b>Na dziś wszystko zrobione!</b><p class="muted small">Wróć jutro lub zwiększ limit nowych kart w Statystykach.</p></div>`;
+  return h + `</div>`;
+}
+
+function renderStats() {
+  const cnt = arr => { let m = 0, l = 0; for (const i of arr) { const v = level(i.id); if (v === 3) m++; else if (v) l++; } return {m, l, t: arr.length}; };
+  const kh = cnt(KANA.h), kk = cnt(KANA.k), w = cnt(WORDS), p = cnt(PHRASES);
+  const s = streak(), best = Math.max(st.best || 0, s);
+  const acc = st.total ? Math.round(st.correct / st.total * 100) : 0;
+  const pr = (o, lab) => `<div class="tile"><div class="n">${o.m}<span class="muted" style="font-size:16px;font-weight:600"> / ${o.t}</span></div><div class="l">${lab} opanowane</div>
+    <div class="prog"><i class="m" style="width:${o.m / o.t * 100}%"></i><i class="l" style="width:${o.l / o.t * 100}%"></i></div><div class="l small" style="margin-top:6px">w nauce: ${o.l}</div></div>`;
+  let h = `<div class="tiles"><div class="tile hero"><div class="fire">🔥</div><div><div class="n">${s} ${s === 1 ? 'dzień' : 'dni'}</div><div class="l">seria nauki · rekord: ${best}</div></div></div>
+    ${pr(kh, 'Hiragana')}${pr(kk, 'Katakana')}${pr(w, 'Słowa')}${pr(p, 'Zwroty')}
+    <div class="tile"><div class="n">${kh.m + kk.m}</div><div class="l">znaków opanowanych łącznie</div></div>
+    <div class="tile"><div class="n">${st.total}</div><div class="l">odpowiedzi · ${acc}% trafnych</div></div></div>`;
+  h += `<h2>Ostatnie 14 dni</h2><div class="chart">`;
+  const days = []; for (let i = 13; i >= 0; i--) { const d = new Date(); d.setHours(12); d.setDate(d.getDate() - i); days.push(d); }
+  const max = Math.max(1, ...days.map(d => st.log[dkey(d)] || 0));
+  h += days.map(d => { const n = st.log[dkey(d)] || 0; return `<div class="${n ? '' : 'z'}" style="height:${Math.max(2, n / max * 100)}%" title="${n}"><span>${d.getDate()}</span></div>`; }).join('');
+  h += `</div><p class="muted small">Opanowane = karta przetrwała co najmniej ${MASTER} powtórki w rosnących odstępach (min. kilka dni).</p>`;
+  h += `<h2>Wymowa</h2><div class="set stack">
+    <label for="rate">Tempo mowy: <span id="rateV">${st.settings.rate.toFixed(2)}</span>×</label>
+    <input id="rate" type="range" min="0.5" max="1.2" step="0.05" value="${st.settings.rate}">
+    <div class="muted small">${!hasTTS ? '⚠️ Brak obsługi syntezy mowy.' : jaVoice ? 'Głos: ' + esc(jaVoice.name) + ' (' + esc(jaVoice.lang) + ')' : 'Nie znaleziono japońskiego głosu – na iPhonie: Ustawienia → Dostępność → Treść mówiona → Głosy → Japoński (np. Kyoko).'}</div>
+    <button class="btn" data-act="testVoice">🔊 Test: こんにちは</button></div>`;
+  h += `<h2>Ustawienia powtórek</h2><div class="set"><label>Nowe karty dziennie</label><div class="seg" style="margin:0">${[5, 10, 15, 25, 40].map(n => `<button class="${st.settings.newPerDay === n ? 'on' : ''}" data-act="newPerDay" data-v="${n}">${n}</button>`).join('')}</div></div>`;
+  h += `<div style="margin-top:24px"><button class="btn ghost" data-act="reset">Wyzeruj cały postęp</button></div>`;
+  return h;
+}
+
+/* ================== SESJE: FISZKI ================== */
+function startCards(items, opts = {}) {
+  if (!items.length) { toast('Brak kart w tym zestawie'); return; }
+  sess = {type: 'cards', queue: opts.keepOrder ? items.slice() : shuffle(items), i: 0, revealed: false, known: 0, unknown: 0, retries: {}, opts};
+  render(); window.scrollTo(0, 0);
+}
+function cardFront(it, rev) {
+  if (rev) return `<div class="big pl">${esc(it.meaning)}</div>`;
+  const cls = it.type === 'p' ? 's' : (it.type === 'w' || it.front.length > 1) ? 'w' : '';
+  return `<div class="big ${cls}">${esc(it.front)}</div>`;
+}
+function cardBack(it, rev) {
+  if (it.type === 'h' || it.type === 'k') return `<div class="ro">${esc(it.romaji)}</div>`;
+  let h = '';
+  if (rev) h += `<div class="big ${it.type === 'p' ? 's' : 'w'}" style="font-family:var(--jp)">${esc(it.front)}</div>`;
+  if (it.kana) h += `<div class="kn">${esc(it.kana)}</div>`;
+  h += `<div class="ro" style="font-size:22px">${esc(it.romaji)}</div>`;
+  if (!rev) h += `<div class="me">${esc(it.meaning)}</div>`;
+  return h;
+}
+const TYPE_LABEL = {h: 'hiragana', k: 'katakana', w: 'słowo', p: 'zwrot'};
+function renderCards() {
+  const s = sess;
+  if (s.i >= s.queue.length) return renderResult(`<div class="e">${s.unknown ? '💪' : '🌸'}</div><div class="big">${s.known} / ${s.known + s.unknown}</div><p class="muted">Znane / wszystkie odpowiedzi</p>`);
+  const it = s.queue[s.i];
+  const rev = !!s.opts.reverse;
+  let h = `<div class="top-sess"><button class="x" data-act="endSess">✕ Zakończ</button><span class="muted small">${s.i + 1} / ${s.queue.length}</span></div>
+    <div class="bar"><i style="width:${s.i / s.queue.length * 100}%"></i></div>
+    <div class="flash" data-act="reveal"><span class="tag">${TYPE_LABEL[it.type]}${it.cat ? ' · ' + esc(it.cat) : ''}</span>${(!rev || s.revealed) ? spkBtn(it.id) : ''}
+    ${cardFront(it, rev)}
+    ${s.revealed ? `<div class="ans">${cardBack(it, rev)}</div>` : `<div class="hint">Dotknij, aby odkryć</div>`}</div>`;
+  h += s.revealed
+    ? `<div class="row"><button class="btn bad" data-act="grade" data-v="0">✗ Nie znam</button><button class="btn ok" data-act="grade" data-v="1">✓ Znam</button></div>`
+    : `<button class="btn primary" data-act="reveal">Pokaż odpowiedź</button>`;
+  return h;
+}
+function cardGrade(ok) {
+  const s = sess, it = s.queue[s.i];
+  grade(it.id, ok);
+  if (ok) s.known++;
+  else {
+    s.unknown++;
+    s.retries[it.id] = (s.retries[it.id] || 0) + 1;
+    if (s.retries[it.id] <= 3) s.queue.splice(Math.min(s.i + 4, s.queue.length), 0, it); // wraca za kilka kart
+  }
+  s.i++; s.revealed = false; render();
+}
+function renderResult(inner) {
+  return `<div class="res">${inner}</div><div class="stack"><button class="btn primary" data-act="again">Jeszcze raz</button><button class="btn" data-act="endSess">Powrót</button></div>`;
+}
+
+/* ================== SESJE: QUIZ ================== */
+function startQuiz(pool, opts = {}) {
+  if (pool.length < 4) { toast('Wybierz większy zestaw (min. 4 elementy)'); return; }
+  // pytania: najpierw słabsze
+  const ordered = shuffle(pool).sort((a, b) => level(a.id) === 3 ? 1 : level(b.id) === 3 ? -1 : 0);
+  sess = {type: 'quiz', pool, queue: ordered.slice(0, Math.min(20, pool.length)), i: 0, score: 0, picked: null, opts};
+  makeOptions(); render(); window.scrollTo(0, 0);
+}
+function qField(it, side) { // side: 'q' (pytanie) lub 'a' (odpowiedź)
+  const rev = sess.opts.reverse;
+  if (it.type === 'h' || it.type === 'k') return side === 'q' ? it.front : it.romaji;
+  return (side === 'q') !== !!rev ? it.front : it.meaning;
+}
+function makeOptions() {
+  const s = sess; if (s.i >= s.queue.length) return;
+  const it = s.queue[s.i], correct = qField(it, 'a');
+  const seen = new Set([correct]); const opts = [it];
+  for (const o of shuffle(s.pool)) { if (opts.length >= 4) break; const v = qField(o, 'a'); if (!seen.has(v)) { seen.add(v); opts.push(o); } }
+  s.options = shuffle(opts);
+}
+function renderQuiz() {
+  const s = sess;
+  if (s.i >= s.queue.length) {
+    const pct = Math.round(s.score / s.queue.length * 100);
+    return renderResult(`<div class="e">${pct >= 90 ? '🏆' : pct >= 60 ? '👍' : '📚'}</div><div class="big">${s.score} / ${s.queue.length}</div><p class="muted">${pct}% poprawnych odpowiedzi</p>`);
+  }
+  const it = s.queue[s.i], correct = qField(it, 'a');
+  const q = qField(it, 'q'); const qIsJp = q === it.front;
+  const ansJp = !qIsJp;
+  const cls = it.type === 'p' ? 's' : (!qIsJp ? 'pl' : (q.length > 1 ? 'w' : ''));
+  let h = `<div class="top-sess"><button class="x" data-act="endSess">✕ Zakończ</button><span class="muted small">${s.i + 1} / ${s.queue.length} · wynik ${s.score}</span></div>
+    <div class="bar"><i style="width:${s.i / s.queue.length * 100}%"></i></div>
+    <div class="flash qcard" ${qIsJp ? `data-act="speak" data-id="${esc(it.id)}"` : ''}><span class="tag">${qIsJp ? 'co to znaczy?' : 'jak to jest po japońsku?'}</span>${qIsJp ? spkBtn(it.id) : ''}
+    <div class="big ${cls}">${esc(q)}</div>${(s.picked !== null && it.kana) ? `<div class="ans"><div class="kn">${esc(it.kana)} · ${esc(it.romaji)}</div></div>` : ''}</div>
+    <div class="opts ${s.options.some(o => qField(o, 'a').length > 14) ? 'wide' : ''}">`;
+  h += s.options.map((o, idx) => {
+    const v = qField(o, 'a');
+    let c = '';
+    if (s.picked !== null) { if (v === correct) c = 'good'; else if (idx === s.picked) c = 'wrong'; }
+    return `<button class="opt ${ansJp ? 'jpo' : ''} ${c}" data-act="pick" data-v="${idx}" ${s.picked !== null ? 'disabled' : ''}>${esc(v)}</button>`;
+  }).join('') + `</div>`;
+  if (s.picked !== null && qField(s.options[s.picked], 'a') !== correct) h += `<div style="margin-top:14px"><button class="btn primary" data-act="next">Dalej →</button></div>`;
+  return h;
+}
+function quizPick(idx) {
+  const s = sess; if (s.picked !== null) return;
+  s.picked = idx;
+  const it = s.queue[s.i];
+  const ok = qField(s.options[idx], 'a') === qField(it, 'a');
+  grade(it.id, ok);
+  if (ok) { s.score++; render(); const cur = s.i; setTimeout(() => { if (sess === s && s.i === cur) quizNext(); }, 750); }
+  else render();
+}
+function quizNext() { const s = sess; s.i++; s.picked = null; makeOptions(); render(); }
+
+/* ================== AKCJE ================== */
+function relaunch() {
+  const o = sess.opts;
+  if (o.again) o.again(); else sess = null, render();
+}
+const actions = {
+  ui(el) { let v = el.dataset.v; if (v === 'true') v = true; else if (v === 'false') v = false; ui[el.dataset.k] = v; saveUi(); render(); },
+  kgroup(el) { const g = el.dataset.v; const set = new Set(ui.kGroups); if (set.has(g)) { if (set.size > 1) set.delete(g); } else set.add(g); ui.kGroups = Object.keys(KANA_GROUPS).filter(x => set.has(x)); saveUi(); render(); },
+  speak(el) { const it = BY_ID[el.dataset.id]; if (it) speak(it.speak); },
+  startKana() { const go = () => ui.kMode === 'quiz' ? startQuiz(kanaPool(), {again: go}) : startCards(kanaPool(), {again: go}); go(); },
+  startWords() { const go = () => ui.wMode === 'quiz' ? startQuiz(wordPool(), {reverse: ui.wRev, again: go}) : startCards(wordPool(), {reverse: ui.wRev, again: go}); go(); },
+  startPhrases() { const go = () => startCards(PHRASES, {reverse: true, again: go}); go(); },
+  startReview() {
+    const go = () => {
+      const q = reviewQueue(DECKS.find(d => d[0] === ui.deck)[2]());
+      const items = [...q.due, ...q.fresh];
+      if (!items.length) { sess = null; render(); toast('Brak kart do powtórki 🎉'); return; }
+      startCards(items, {keepOrder: true, review: true, again: go});
+    };
+    go();
+  },
+  reveal() { if (sess && !sess.revealed) { sess.revealed = true; render(); const it = sess.queue[sess.i]; if (sess.opts.reverse) speak(it.speak); } },
+  grade(el) { cardGrade(el.dataset.v === '1'); },
+  pick(el) { quizPick(+el.dataset.v); },
+  next() { quizNext(); },
+  endSess() { sess = null; render(); window.scrollTo(0, 0); },
+  again() { relaunch(); },
+  testVoice() { speak('こんにちは'); },
+  newPerDay(el) { st.settings.newPerDay = +el.dataset.v; save(); render(); },
+  reset() { if (confirm('Na pewno usunąć cały postęp? Tej operacji nie można cofnąć.')) { st = defaults(); save(); render(); toast('Postęp wyzerowany'); } }
+};
+document.addEventListener('click', e => {
+  const tab = e.target.closest('[data-tab]');
+  if (tab) { setTab(tab.dataset.tab); return; }
+  const el = e.target.closest('[data-act]');
+  if (!el || el.disabled) return;
+  e.stopPropagation();
+  const fn = actions[el.dataset.act]; if (fn) fn(el);
+});
+document.addEventListener('input', e => {
+  if (e.target.id === 'rate') { st.settings.rate = +e.target.value; $('#rateV').textContent = st.settings.rate.toFixed(2); save(); }
+});
+// Odśwież licznik po powrocie do aplikacji (np. następnego dnia)
+document.addEventListener('visibilitychange', () => { if (!document.hidden && !sess) render(); });
+
+render();
+</script>
+</body>
+</html>
