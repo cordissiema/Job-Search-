@@ -40,8 +40,9 @@ Załaduj narzędzie `ArtifactData` (ToolSearch: `select:ArtifactData`). Jednym w
  "wymagania":[{"t":"Doświadczenie na produkcji","s":"tak","n":"16 mies. Smurfit Westrock"},{"t":"Prawo jazdy kat. B","s":"?","n":"brak w CV – potwierdź"}],
  "status":""}
 ```
-Przy dużej liczbie ofert dziel na kilka wywołań `batch` (np. po 25). Na końcu ustaw dokument `meta/stan`: `{"ostatnie":"<ISO teraz>","nowych":<liczba>,"wysokich":<liczba ≥70>,"bledy":"<tekst lub pusty>"}`.
-Usuń (`delete`) dokumenty `oferty/*` z `znaleziono` starszym niż 30 dni i `status` pustym (sprawdź `list`/`query` raz na dobę – wystarczy, gdy godzina uruchomienia to 6:xx–7:xx).
+Przy dużej liczbie ofert dziel na kilka wywołań `batch` (np. po 25). Nowe dokumenty zapisuj bez `if_version`; jeśli batch odrzuci wpis, bo dokument już istnieje – pomiń tę ofertę (jest już oceniona, a użytkownik mógł zmienić jej status).
+Na końcu zaktualizuj dokument `meta/stan`: najpierw `get` (`collection: "meta"`, `doc_id: "stan"`); jeśli istnieje – `set` z `if_version` równym odczytanej `version`, jeśli nie – `set` bez `if_version`. Treść: `{"ostatnie":"<ISO teraz>","nowych":<liczba>,"wysokich":<liczba ≥70>,"bledy":"<tekst lub pusty>"}`.
+Sprzątanie (tylko gdy bieżąca godzina UTC to 5:xx–6:xx): `query` na `oferty` z `where: [["status","==",""]]`, `limit: 1000`; dokumenty z `znaleziono` starszym niż 30 dni usuń `batch`em `delete`, podając dla każdego `if_version` z odczytu.
 
 ## 4. Oznacz oferty jako widziane i zapisz
 ```
