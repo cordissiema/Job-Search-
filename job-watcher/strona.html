@@ -62,6 +62,13 @@ details summary::-webkit-details-marker{display:none}
 .empty b{display:block;color:var(--fg);font-family:var(--display);font-size:18px;margin-bottom:6px}
 .legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:13px;color:var(--muted);margin-top:10px}
 .note-top{font-size:13px;color:var(--unk);margin-top:6px}
+.thumb{min-width:48px;justify-content:center;font-size:18px;padding:8px 12px}
+.thumb.up[aria-pressed="true"]{background:var(--ok-bg);border-color:var(--ok);color:var(--ok)}
+.thumb.down[aria-pressed="true"]{background:var(--bad-bg);border-color:var(--bad);color:var(--bad)}
+.actions .sep{flex:1}
+.prefs{margin-top:12px;font-size:14px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 14px}
+.prefs summary{color:var(--fg);font-weight:600}
+.prefs p{margin:8px 0 2px;color:var(--muted);white-space:pre-line}
 .head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
 .refresh{flex:none}
 .refresh[disabled]{opacity:.6;cursor:default}
@@ -81,6 +88,7 @@ details summary::-webkit-details-marker{display:none}
   </div>
   <div class="sub" id="status">Ładuję oferty…</div>
   <div class="scan" id="scan" hidden></div>
+  <details class="prefs" id="prefs" hidden><summary id="prefsSum">Czego Radar nauczył się z Twoich ocen</summary><p id="prefsText"></p></details>
   <div class="note-top" id="warn" hidden></div>
   <div class="bar">
     <div class="chips" id="filters" role="toolbar" aria-label="Filtr ofert"></div>
@@ -129,8 +137,11 @@ details summary::-webkit-details-marker{display:none}
           <div class="tally"><span class="t1"><b>${n('tak')}</b> spełniasz</span><span class="t2"><b>${n('nie')}</b> nie</span><span class="t3"><b>${n('?')}</b> do sprawdzenia</span></div>
           <ul class="reqs">${list}</ul></details>` : ''}
         <div class="actions">
-          <a class="btn primary" href="${esc(o.url)}" target="_blank" rel="noopener">Otwórz ogłoszenie</a>
-          ${writable && db ? `<button class="btn" data-id="${esc(o._id)}" data-s="aplikowalem" aria-pressed="${o.status === 'aplikowalem'}">${o.status === 'aplikowalem' ? '✓ Aplikowałem' : 'Aplikowałem'}</button>
+          <a class="btn primary" href="${esc(o.url)}" target="_blank" rel="noopener" data-open="${esc(o._id)}">Otwórz ogłoszenie</a>
+          ${writable && db ? `<button class="btn thumb up" data-id="${esc(o._id)}" data-k="1" aria-pressed="${o.kciuk === 1}" aria-label="Podoba mi się" title="Podoba mi się">👍</button>
+          <button class="btn thumb down" data-id="${esc(o._id)}" data-k="-1" aria-pressed="${o.kciuk === -1}" aria-label="Nie dla mnie" title="Nie dla mnie">👎</button>
+          <span class="sep"></span>
+          <button class="btn" data-id="${esc(o._id)}" data-s="aplikowalem" aria-pressed="${o.status === 'aplikowalem'}">${o.status === 'aplikowalem' ? '✓ Aplikowałem' : 'Aplikowałem'}</button>
           <button class="btn" data-id="${esc(o._id)}" data-s="ukryta" aria-pressed="${o.status === 'ukryta'}">${o.status === 'ukryta' ? 'Przywróć' : 'Ukryj'}</button>` : ''}
         </div>
       </div></article>`;
@@ -201,6 +212,21 @@ details summary::-webkit-details-marker{display:none}
   document.addEventListener('click', async e => {
     const f = e.target.closest('[data-f]');
     if (f) { filter = f.dataset.f; try { localStorage.setItem('radar_filter', filter); } catch (er) {} render(); return; }
+    const open = e.target.closest('a[data-open]');
+    if (open && db) {
+      const o = offers.find(x => x._id === open.dataset.open);
+      if (o && !o.otwarto) db.doc('oferty/' + o._id).update({otwarto: new Date().toISOString()}).catch(() => {});
+      return;
+    }
+    const th = e.target.closest('button[data-k]');
+    if (th && db) {
+      const o = offers.find(x => x._id === th.dataset.id); if (!o) return;
+      const v = +th.dataset.k, next = o.kciuk === v ? 0 : v;
+      th.disabled = true;
+      try { await db.doc('oferty/' + o._id).update({kciuk: next, kciuk_kiedy: new Date().toISOString()}); }
+      catch (er) { if (er && er.code === 'invalid_argument') { writable = false; render(); } th.disabled = false; }
+      return;
+    }
     const b = e.target.closest('button[data-s]');
     if (!b || !db) return;
     const o = offers.find(x => x._id === b.dataset.id); if (!o) return;
@@ -226,6 +252,13 @@ details summary::-webkit-details-marker{display:none}
       render();
     }, err => { clearTimeout(timer); $('status').textContent = 'Nie można wczytać ofert (' + err.code + ').'; });
     db.doc('meta/stan').onSnapshot(d => { meta = d.exists ? d.data() : null; render(); }, () => {});
+    db.doc('meta/preferencje').onSnapshot(d => {
+      const p = d.exists ? d.data() : null;
+      if (!p || !p.tekst) { $('prefs').hidden = true; return; }
+      $('prefsSum').textContent = `Czego Radar nauczył się z Twoich ocen (👍 ${p.polubione || 0} · 👎 ${p.niepolubione || 0})`;
+      $('prefsText').textContent = p.tekst + (p.aktualizacja ? `\n\nAktualizacja: ${fmt(p.aktualizacja)}` : '');
+      $('prefs').hidden = false;
+    }, () => {});
   })();
 })();
 </script>

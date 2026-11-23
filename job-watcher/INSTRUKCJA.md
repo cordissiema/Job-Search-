@@ -13,6 +13,13 @@ python3 job-watcher/fetch.py --max-age-days 3 --seen-file /tmp/radar/meta/widzia
 Wynik trafia do `job-watcher/nowe.json`. Jeśli 0 nowych ofert: przejdź od razu do kroku 4 (zapisz tylko `meta/stan`), bez powiadomienia.
 Jeśli skrypt zgłosi BŁĄD dla serwisu, zanotuj go w `meta/stan.bledy`.
 
+## 1b. Odczytaj oceny użytkownika (👍/👎) i zaktualizuj preferencje
+Użytkownik ocenia oferty na stronie: pole `kciuk` = `1` (👍 podoba się), `-1` (👎 nie dla mnie), `0`/brak = bez oceny. Dodatkowe sygnały: `status: "aplikowalem"` (silnie pozytywny), `otwarto` (otworzył ogłoszenie – słaby pozytywny), `status: "ukryta"` (słaby negatywny).
+1. `ArtifactData` `query` na `oferty` z `where: [["kciuk","==",1]]`, `limit: 300`, `out_dir: "/tmp/radar"`; tak samo dla `-1` i dla `["status","==","aplikowalem"]`. Wystarczą pola: `tytul`, `firma`, `miejsce`, `stawka`, `podsumowanie`, `wymagania`, `ocena`, `parametry` nie są zapisywane – wnioskuj z tytułu i wymagań.
+2. Wyciągnij wzorce: jakie branże/stanowiska, rodzaje pracy (fizyczna/biurowa/z ludźmi), systemy (zmiany, noce, weekendy), wymiar etatu, stawki, lokalizacje, typy pracodawców (agencje pracy, sieci, małe firmy) użytkownik lubi, a jakie odrzuca. Zwróć uwagę na rozbieżności: 👎 przy wysokiej ocenie Radaru = Radar przecenia ten typ; 👍 przy niskiej = niedocenia.
+3. Zapisz podsumowanie w dokumencie `meta/preferencje` (najpierw `get`, potem `set` z `if_version`, jeśli istnieje): `{"tekst":"<3–8 krótkich punktów po polsku, np. ‘+ magazyn i sortownie, także na zmiany’, ‘− przedstawiciel handlowy na prowizji’>","polubione":<liczba 👍>,"niepolubione":<liczba 👎>,"aplikowane":<liczba>,"aktualizacja":"<ISO teraz>"}`. Gdy ocen jest 0 – pomiń zapis.
+Te wnioski MAJĄ PIERWSZEŃSTWO przed „Preferencjami” z profilu, gdy są ze sobą sprzeczne (profil to założenia, oceny to realne wybory użytkownika). Twardych wymagań (uprawnienia, wykształcenie) oceny nie zmieniają.
+
 ## 2. Oceń każdą ofertę względem profilu kandydata (podanego w treści zadania – NIE zapisuj go w repozytorium, jest publiczne)
 Przeczytaj profil z treści zadania. Dla każdej oferty z `nowe.json`:
 
@@ -30,6 +37,7 @@ Cechy osobowe (komunikatywność, odpowiedzialność, szybka nauka) oceniaj na p
 - 40–59: realna szansa, ale istotne `"?"` lub jeden brak.
 - 20–39: wyraźne braki.
 - 0–19: nie spełnia twardych wymogów / wykluczone preferencjami.
+**Korekta wg ocen użytkownika (krok 1b):** oferta bardzo podobna do polubionych/aplikowanych (to samo stanowisko lub branża i podobne warunki) +10 do +20; podobna do 👎 −15 do −30. Gdy korekta zadziałała, dopisz to w `podsumowanie` (np. „Podobna do ofert, które oznaczyłeś 👍 (sortownie).”).
 Kary: praca dorywcza/dodatkowa −10, brak stawki −5, odległość > 25 km −20. Ogłoszenia agencji o pracy za granicą z lokalizacją „Białystok” – traktuj jako zagraniczne.
 
 `podsumowanie`: 1–2 zdania po polsku, konkretnie dlaczego taka ocena (np. „Twoje 16 mies. na produkcji w Smurfit Westrock pasuje wprost; jedyna niewiadoma to prawo jazdy kat. B.”).
@@ -40,11 +48,11 @@ Załaduj narzędzie `ArtifactData` (ToolSearch: `select:ArtifactData`). Jednym w
 {"tytul":"…","url":"…","zrodlo":"OLX","firma":"…","miejsce":"…","stawka":"…","dodano":"<ISO z nowe.json>",
  "znaleziono":"<ISO teraz>","ocena":72,"podsumowanie":"…",
  "wymagania":[{"t":"Doświadczenie na produkcji","s":"tak","n":"16 mies. Smurfit Westrock"},{"t":"Prawo jazdy kat. B","s":"?","n":"brak w CV – potwierdź"}],
- "status":""}
+ "status":"","kciuk":0}
 ```
 Przy dużej liczbie ofert dziel na kilka wywołań `batch` (np. po 25). Nowe dokumenty zapisuj bez `if_version`; jeśli batch odrzuci wpis, bo dokument już istnieje – pomiń tę ofertę (jest już oceniona, a użytkownik mógł zmienić jej status).
 Na końcu zaktualizuj dokument `meta/stan`: najpierw `get` (`collection: "meta"`, `doc_id: "stan"`); jeśli istnieje – `set` z `if_version` równym odczytanej `version`, jeśli nie – `set` bez `if_version`. Treść: `{"ostatnie":"<ISO teraz>","nowych":<liczba>,"wysokich":<liczba ≥70>,"bledy":"<tekst lub pusty>"}`.
-Sprzątanie (tylko gdy bieżąca godzina UTC to 5:xx–6:xx): `query` na `oferty` z `where: [["status","==",""]]`, `limit: 1000`; dokumenty z `znaleziono` starszym niż 30 dni usuń `batch`em `delete`, podając dla każdego `if_version` z odczytu.
+Sprzątanie (tylko gdy bieżąca godzina UTC to 5:xx–6:xx): `query` na `oferty` z `where: [["status","==",""]]`, `limit: 1000`; dokumenty z `znaleziono` starszym niż 30 dni i bez `kciuk` (brak lub 0) usuń – ocenione kciukiem zostają na zawsze jako dane o preferencjach; `batch`em `delete`, podając dla każdego `if_version` z odczytu.
 
 ## 4. Oznacz oferty jako widziane
 ```
