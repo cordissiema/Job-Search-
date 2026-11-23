@@ -1,12 +1,14 @@
 # Radar Ofert – procedura jednego uruchomienia
 
 Strona z wynikami: https://claude.ai/artifact/7iyh96yvH6nYmEmAFa4TF2 (baza `db` tego artefaktu).
-Pracuj na gałęzi `claude/japanese-learning-app-zm128y`.
+Repozytorium (gałąź `claude/japanese-learning-app-zm128y`) służy TYLKO do odczytu – nic nie commituj i nie pushuj (sesje zadania nie mają prawa zapisu). Cały stan trzymamy w bazie strony.
+Narzędzie bazy: `ArtifactData` (załaduj: ToolSearch `select:ArtifactData`), zawsze z `url: https://claude.ai/artifact/7iyh96yvH6nYmEmAFa4TF2`.
 
 ## 1. Pobierz nowe oferty
+1. Odczytaj listę widzianych ofert: `ArtifactData` `get`, `collection: "meta"`, `doc_id: "widziane"`, `out_dir: "/tmp/radar"`. Zapamiętaj jej `version` (jeśli dokument nie istnieje – brak wersji).
+2. Uruchom (ścieżkę pliku weź z wyniku `get`; jeśli dokumentu nie było, pomiń `--seen-file`):
 ```
-git fetch origin claude/japanese-learning-app-zm128y && git checkout claude/japanese-learning-app-zm128y && git pull --ff-only
-python3 job-watcher/fetch.py --max-age-days 3
+python3 job-watcher/fetch.py --max-age-days 3 --seen-file /tmp/radar/meta/widziane.json
 ```
 Wynik trafia do `job-watcher/nowe.json`. Jeśli 0 nowych ofert: przejdź od razu do kroku 4 (zapisz tylko `meta/stan`), bez powiadomienia.
 Jeśli skrypt zgłosi BŁĄD dla serwisu, zanotuj go w `meta/stan.bledy`.
@@ -44,12 +46,12 @@ Przy dużej liczbie ofert dziel na kilka wywołań `batch` (np. po 25). Nowe dok
 Na końcu zaktualizuj dokument `meta/stan`: najpierw `get` (`collection: "meta"`, `doc_id: "stan"`); jeśli istnieje – `set` z `if_version` równym odczytanej `version`, jeśli nie – `set` bez `if_version`. Treść: `{"ostatnie":"<ISO teraz>","nowych":<liczba>,"wysokich":<liczba ≥70>,"bledy":"<tekst lub pusty>"}`.
 Sprzątanie (tylko gdy bieżąca godzina UTC to 5:xx–6:xx): `query` na `oferty` z `where: [["status","==",""]]`, `limit: 1000`; dokumenty z `znaleziono` starszym niż 30 dni usuń `batch`em `delete`, podając dla każdego `if_version` z odczytu.
 
-## 4. Oznacz oferty jako widziane i zapisz
+## 4. Oznacz oferty jako widziane
 ```
-python3 job-watcher/fetch.py --mark-seen
-git add job-watcher/seen.json && git commit -m "Radar: widziane oferty" && git push origin claude/japanese-learning-app-zm128y
+python3 job-watcher/fetch.py --mark-seen --seen-file /tmp/radar/meta/widziane.json --seen-out /tmp/radar/widziane-nowe.json
 ```
-(`nowe.json` nie commituj.) Jeśli push zostanie odrzucony: `git pull --rebase` i ponów.
+Potem `ArtifactData` `set`, `collection: "meta"`, `doc_id: "widziane"`, `file_path: "/tmp/radar/widziane-nowe.json"`, z `if_version` = wersja z kroku 1 (bez `if_version`, jeśli dokumentu nie było). Jeśli zapis odrzuci zmiana wersji – ponów krok 1 (`get`) i ten krok raz.
+Rób to ZAWSZE, gdy były nowe oferty – inaczej następne uruchomienie oceni je ponownie.
 
 ## 5. Odpowiedź końcowa (to trafia do powiadomienia push)
 - Jeśli są oferty z oceną ≥ 70: zacznij od „🔔 N nowych ofert z wysokimi szansami”, potem do 5 najlepszych w formacie `72 · Tytuł – Firma, stawka` + jedno zdanie dlaczego + link. Na końcu link do strony.

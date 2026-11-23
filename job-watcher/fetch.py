@@ -4,8 +4,9 @@
 Użycie:
   python3 job-watcher/fetch.py [--max-age-days 3] [--out job-watcher/nowe.json]
 
-Wypisuje/zapisuje listę NOWYCH ofert (nieobecnych w seen.json) z pełnym opisem.
-Identyfikatory zapisuje do seen.json dopiero z flagą --mark-seen (po udanej ocenie).
+Wypisuje/zapisuje listę NOWYCH ofert (nieobecnych na liście widzianych) z pełnym opisem.
+Lista widzianych: --seen-file (dokument meta/widziane z bazy strony, zapisany przez ArtifactData z out_dir).
+--mark-seen dopisuje identyfikatory z nowe.json i zapisuje {"ids": [...]} do --seen-out (do wgrania z powrotem do bazy).
 Tylko biblioteka standardowa Pythona.
 """
 import argparse, datetime as dt, html, json, re, sys, time, urllib.request
@@ -13,6 +14,23 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 SEEN = HERE / "seen.json"
+MAX_SEEN = 6000
+
+
+def load_seen(path):
+    """Czyta identyfikatory z pliku: lista, {"ids": [...]} lub dokument zapisany przez ArtifactData."""
+    p = Path(path)
+    if not p.exists():
+        return []
+    def find(o):
+        if isinstance(o, dict):
+            if isinstance(o.get("ids"), list): return o["ids"]
+            for v in o.values():
+                r = find(v)
+                if r is not None: return r
+        if isinstance(o, list) and all(isinstance(x, str) for x in o): return o
+        return None
+    return find(json.loads(p.read_text())) or []
 UA = ("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
       "(KHTML, like Gecko) Chrome/130.0 Safari/537.36")
 TZ = dt.timezone(dt.timedelta(hours=1))
@@ -122,15 +140,19 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--max-age-days", type=float, default=3, help="pomijaj oferty starsze niż tyle dni")
     ap.add_argument("--out", default=str(HERE / "nowe.json"))
+    ap.add_argument("--seen-file", default=str(SEEN), help="plik z listą widzianych identyfikatorów")
+    ap.add_argument("--seen-out", default=str(HERE / "widziane.json"), help="gdzie zapisać zaktualizowaną listę")
     ap.add_argument("--mark-seen", nargs="?", const=str(HERE / "nowe.json"),
-                    help="dopisz identyfikatory z podanego pliku do seen.json i zakończ")
+                    help="dopisz identyfikatory z podanego pliku do listy widzianych i zakończ")
     a = ap.parse_args()
 
-    seen = set(json.loads(SEEN.read_text())) if SEEN.exists() else set()
+    seen_list = load_seen(a.seen_file)
+    seen = set(seen_list)
     if a.mark_seen:
-        ids = [o["id"] for o in json.loads(Path(a.mark_seen).read_text())]
-        SEEN.write_text(json.dumps(sorted(seen | set(ids)), indent=0))
-        print(f"seen.json: +{len(set(ids) - seen)} (razem {len(seen | set(ids))})")
+        new = [o["id"] for o in json.loads(Path(a.mark_seen).read_text()) if o["id"] not in seen]
+        merged = (seen_list + new)[-MAX_SEEN:]
+        Path(a.seen_out).write_text(json.dumps({"ids": merged}))
+        print(f"widziane: +{len(new)} (razem {len(merged)}) -> {a.seen_out}")
         return
 
     cutoff = dt.datetime.now(TZ) - dt.timedelta(days=a.max_age_days)
