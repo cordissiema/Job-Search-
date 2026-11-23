@@ -1,0 +1,164 @@
+<title>Radar Ofert Białystok</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+/* Układ: lista kart ofert, sortowana wg dopasowania; filtr u góry, lepkie nagłówki */
+:root{
+  --bg:#f4f6f8; --surface:#ffffff; --surface2:#eef1f4; --line:#dde2e8;
+  --fg:#17202b; --muted:#5d6b7a; --accent:#0f8a8f; --accent-fg:#ffffff;
+  --ok:#1f8a4c; --ok-bg:#e3f4ea; --bad:#c43c3c; --bad-bg:#fbe6e6; --unk:#9a6b00; --unk-bg:#fbf1d6;
+  --hi:#1f8a4c; --mid:#c58a00; --lo:#8a95a3;
+  --display:"Space Grotesk",system-ui,sans-serif; --body:"Inter",-apple-system,system-ui,sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0f1418; --surface:#172027; --surface2:#1e2a33; --line:#2a3842;
+  --fg:#e8eef2; --muted:#93a3b0; --accent:#3cc3c8; --accent-fg:#06272a;
+  --ok:#4fd18a; --ok-bg:#16352a; --bad:#ff7b7b; --bad-bg:#3a1f22; --unk:#f1c25b; --unk-bg:#382f17;
+  --hi:#4fd18a; --mid:#f1c25b; --lo:#6c7b88; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0f1418; --surface:#172027; --surface2:#1e2a33; --line:#2a3842;
+  --fg:#e8eef2; --muted:#93a3b0; --accent:#3cc3c8; --accent-fg:#06272a;
+  --ok:#4fd18a; --ok-bg:#16352a; --bad:#ff7b7b; --bad-bg:#3a1f22; --unk:#f1c25b; --unk-bg:#382f17;
+  --hi:#4fd18a; --mid:#f1c25b; --lo:#6c7b88; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font:16px/1.5 var(--body);-webkit-text-size-adjust:100%}
+.wrap{max-width:760px;margin:0 auto;padding-block:20px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+h1{font-family:var(--display);font-size:28px;line-height:1.15;margin:0;text-wrap:balance;letter-spacing:-.01em}
+.sub{color:var(--muted);font-size:14px;margin-top:6px}
+.sub b{color:var(--fg);font-weight:600}
+.bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);padding-block:12px 10px;margin-top:10px;border-bottom:1px solid var(--line)}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+.chips{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:none;border:1px solid var(--line);background:var(--surface);color:var(--fg);border-radius:999px;padding:9px 14px;font:500 14px var(--body);min-height:40px;cursor:pointer;font-variant-numeric:tabular-nums}
+.chip[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-fg)}
+.chip:focus-visible,.btn:focus-visible,a:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.list{display:flex;flex-direction:column;gap:12px;margin-top:14px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px;display:grid;grid-template-columns:auto 1fr;gap:4px 14px}
+.card.done{opacity:.6}
+.score{grid-row:span 2;width:56px;height:56px;border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;font:700 22px/1 var(--display);font-variant-numeric:tabular-nums;color:var(--accent-fg)}
+.score small{font:600 9px/1 var(--body);letter-spacing:.06em;text-transform:uppercase;margin-top:3px;opacity:.85}
+.s-hi{background:var(--hi)} .s-mid{background:var(--mid)} .s-lo{background:var(--lo)}
+.ttl{font:600 17px/1.3 var(--display);min-width:0;overflow-wrap:anywhere}
+.meta{color:var(--muted);font-size:13.5px;display:flex;flex-wrap:wrap;gap:2px 12px;min-width:0}
+.meta .pay{color:var(--fg);font-weight:600}
+.body{grid-column:1/-1;min-width:0;margin-top:8px}
+.why{margin:0 0 10px;font-size:15px}
+.reqs{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.reqs li{display:grid;grid-template-columns:22px 1fr;gap:8px;align-items:start;font-size:14.5px;padding:7px 10px;border-radius:8px}
+.reqs .tak{background:var(--ok-bg)} .reqs .nie{background:var(--bad-bg)} .reqs .nwm{background:var(--unk-bg)}
+.reqs .ic{font-weight:700;text-align:center}
+.tak .ic{color:var(--ok)} .nie .ic{color:var(--bad)} .nwm .ic{color:var(--unk)}
+.reqs .note{display:block;color:var(--muted);font-size:13px}
+.tally{display:flex;gap:12px;font-size:13px;color:var(--muted);margin-bottom:8px;font-variant-numeric:tabular-nums}
+.tally b{font-weight:700}
+.tally .t1 b{color:var(--ok)} .tally .t2 b{color:var(--bad)} .tally .t3 b{color:var(--unk)}
+details summary{cursor:pointer;color:var(--accent);font-size:14px;font-weight:600;list-style:none;padding:4px 0}
+details summary::-webkit-details-marker{display:none}
+.actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.btn{border:1px solid var(--line);background:var(--surface2);color:var(--fg);border-radius:10px;padding:10px 14px;font:600 14px var(--body);min-height:44px;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center}
+.btn.primary{background:var(--accent);color:var(--accent-fg);border-color:var(--accent)}
+.btn[aria-pressed="true"]{border-color:var(--accent);color:var(--accent)}
+.empty{text-align:center;color:var(--muted);padding:40px 12px;background:var(--surface);border:1px dashed var(--line);border-radius:14px}
+.empty b{display:block;color:var(--fg);font-family:var(--display);font-size:18px;margin-bottom:6px}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:13px;color:var(--muted);margin-top:10px}
+.note-top{font-size:13px;color:var(--unk);margin-top:6px}
+@media (prefers-reduced-motion:no-preference){.card{transition:opacity .2s}}
+</style>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap">
+
+<div class="wrap">
+  <h1>Radar Ofert Białystok</h1>
+  <div class="sub" id="status">Ładuję oferty…</div>
+  <div class="note-top" id="warn" hidden></div>
+  <div class="bar">
+    <div class="chips" id="filters" role="toolbar" aria-label="Filtr ofert"></div>
+    <div class="legend"><span>✓ spełniasz</span><span>✗ nie spełniasz</span><span>? brak danych w CV</span></div>
+  </div>
+  <div class="list" id="list"></div>
+</div>
+
+<script>
+(() => {
+  const FILTERS = [
+    ['wysokie', 'Wysokie szanse', o => o.ocena >= 70 && !o.status],
+    ['srednie', 'Średnie', o => o.ocena >= 40 && o.ocena < 70 && !o.status],
+    ['wszystkie', 'Wszystkie nowe', o => !o.status],
+    ['aplikowalem', 'Aplikowałem', o => o.status === 'aplikowalem'],
+    ['ukryte', 'Ukryte', o => o.status === 'ukryta'],
+  ];
+  let filter = 'wysokie';
+  try { filter = localStorage.getItem('radar_filter') || filter; } catch (e) {}
+  let offers = [], meta = null, db = null, writable = true;
+
+  const $ = id => document.getElementById(id);
+  const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const fmt = iso => { if (!iso) return ''; const d = new Date(iso); if (isNaN(d)) return ''; return d.toLocaleString('pl-PL', {day:'numeric', month:'short', hour:'2-digit', minute:'2-digit'}); };
+  const ago = iso => { const m = Math.round((Date.now() - new Date(iso)) / 60000); if (!(m >= 0)) return ''; if (m < 60) return m + ' min temu'; const h = Math.round(m / 60); if (h < 48) return h + ' godz. temu'; return Math.round(h / 24) + ' dni temu'; };
+  const cls = s => s >= 70 ? 's-hi' : s >= 40 ? 's-mid' : 's-lo';
+  const lab = s => s >= 70 ? 'wysokie' : s >= 40 ? 'średnie' : 'niskie';
+  const REQ = {tak: ['tak', '✓'], nie: ['nie', '✗'], '?': ['nwm', '?']};
+
+  function renderFilters() {
+    $('filters').innerHTML = FILTERS.map(([k, l, fn]) =>
+      `<button class="chip" data-f="${k}" aria-pressed="${filter === k}">${l} · ${offers.filter(fn).length}</button>`).join('');
+  }
+  function card(o) {
+    const reqs = Array.isArray(o.wymagania) ? o.wymagania : [];
+    const n = k => reqs.filter(r => r.s === k).length;
+    const list = reqs.map(r => { const [c, ic] = REQ[r.s] || REQ['?']; return `<li class="${c}"><span class="ic">${ic}</span><span>${esc(r.t)}${r.n ? `<span class="note">${esc(r.n)}</span>` : ''}</span></li>`; }).join('');
+    const open = o.ocena >= 40;
+    return `<article class="card ${o.status ? 'done' : ''}">
+      <div class="score ${cls(o.ocena)}">${o.ocena}<small>${lab(o.ocena)}</small></div>
+      <div class="ttl">${esc(o.tytul)}</div>
+      <div class="meta">${o.firma ? `<span>${esc(o.firma)}</span>` : ''}<span>${esc(o.miejsce || '')}</span>${o.stawka ? `<span class="pay">${esc(o.stawka)}</span>` : ''}<span>${esc(o.zrodlo)} · ${esc(ago(o.dodano) || fmt(o.dodano))}</span></div>
+      <div class="body">
+        <p class="why">${esc(o.podsumowanie || '')}</p>
+        ${reqs.length ? `<details ${open ? 'open' : ''}><summary>Wymagania pracodawcy</summary>
+          <div class="tally"><span class="t1"><b>${n('tak')}</b> spełniasz</span><span class="t2"><b>${n('nie')}</b> nie</span><span class="t3"><b>${n('?')}</b> do sprawdzenia</span></div>
+          <ul class="reqs">${list}</ul></details>` : ''}
+        <div class="actions">
+          <a class="btn primary" href="${esc(o.url)}" target="_blank" rel="noopener">Otwórz ogłoszenie</a>
+          ${writable && db ? `<button class="btn" data-id="${esc(o._id)}" data-s="aplikowalem" aria-pressed="${o.status === 'aplikowalem'}">${o.status === 'aplikowalem' ? '✓ Aplikowałem' : 'Aplikowałem'}</button>
+          <button class="btn" data-id="${esc(o._id)}" data-s="ukryta" aria-pressed="${o.status === 'ukryta'}">${o.status === 'ukryta' ? 'Przywróć' : 'Ukryj'}</button>` : ''}
+        </div>
+      </div></article>`;
+  }
+  function render() {
+    renderFilters();
+    const fn = (FILTERS.find(f => f[0] === filter) || FILTERS[0])[2];
+    const rows = offers.filter(fn).sort((a, b) => (b.ocena - a.ocena) || String(b.dodano).localeCompare(String(a.dodano)));
+    $('list').innerHTML = rows.length ? rows.map(card).join('') :
+      `<div class="empty"><b>${offers.length ? 'Brak ofert w tym widoku' : 'Jeszcze nic tu nie ma'}</b>${offers.length ? 'Zmień filtr powyżej.' : 'Oferty pojawią się po pierwszym sprawdzeniu OLX i Białystok Online. Zadanie uruchamia się co 2 godziny.'}</div>`;
+    const hi = offers.filter(FILTERS[0][2]).length;
+    $('status').innerHTML = meta && meta.ostatnie
+      ? `Ostatnie sprawdzenie: <b>${esc(fmt(meta.ostatnie))}</b> (${esc(ago(meta.ostatnie))}) · ocenionych ofert: <b>${offers.length}</b> · z wysokimi szansami: <b>${hi}</b>`
+      : `Ocenionych ofert: <b>${offers.length}</b>`;
+    if (meta && meta.bledy) { $('warn').textContent = 'Ostatnie sprawdzenie: ' + meta.bledy; $('warn').hidden = false; } else $('warn').hidden = true;
+  }
+
+  document.addEventListener('click', async e => {
+    const f = e.target.closest('[data-f]');
+    if (f) { filter = f.dataset.f; try { localStorage.setItem('radar_filter', filter); } catch (er) {} render(); return; }
+    const b = e.target.closest('button[data-s]');
+    if (!b || !db) return;
+    const o = offers.find(x => x._id === b.dataset.id); if (!o) return;
+    const next = o.status === b.dataset.s ? '' : b.dataset.s;
+    b.disabled = true;
+    try { await db.doc('oferty/' + o._id).update({status: next}); }
+    catch (er) { if (er && er.code === 'invalid_argument') { writable = false; render(); } b.disabled = false; }
+  });
+
+  render();
+  const timer = setTimeout(() => { if (!offers.length) $('status').textContent = 'Nie udało się jeszcze połączyć z bazą ofert. Odśwież stronę za chwilę.'; }, 10000);
+  (async () => {
+    db = await window.claude?.use?.('db');
+    if (!db) { clearTimeout(timer); $('status').textContent = 'Baza ofert jest niedostępna w tym widoku. Otwórz stronę zalogowany na claude.ai.'; return; }
+    db.collection('oferty').onSnapshot(snap => {
+      if (!snap.metadata.fromCache) clearTimeout(timer);
+      offers = snap.docs.map(d => Object.assign({_id: d.id}, d.data()));
+      render();
+    }, err => { clearTimeout(timer); $('status').textContent = 'Nie można wczytać ofert (' + err.code + ').'; });
+    db.doc('meta/stan').onSnapshot(d => { meta = d.exists ? d.data() : null; render(); }, () => {});
+  })();
+})();
+</script>
