@@ -730,7 +730,14 @@ const actions = {
   again() { relaunch(); },
   testVoice() { speak('こんにちは'); },
   newPerDay(el) { st.settings.newPerDay = +el.dataset.v; save(); render(); },
-  reset() { if (confirm('Na pewno usunąć cały postęp? Tej operacji nie można cofnąć.')) { st = defaults(); save(); render(); toast('Postęp wyzerowany'); } }
+  reset(el) {
+    if (el.dataset.armed !== '1') {
+      el.dataset.armed = '1'; el.textContent = 'Dotknij ponownie, aby usunąć cały postęp'; el.style.color = 'var(--bad)'; el.style.borderColor = 'var(--bad)';
+      setTimeout(() => { if (el.isConnected) { el.dataset.armed = ''; el.textContent = 'Wyzeruj cały postęp'; el.style.color = ''; el.style.borderColor = ''; } }, 4000);
+      return;
+    }
+    st = defaults(); save(); render(); toast('Postęp wyzerowany');
+  }
 };
 document.addEventListener('click', e => {
   const tab = e.target.closest('[data-tab]');
